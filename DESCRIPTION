@@ -1,0 +1,17 @@
+Package: useclinicutils
+Type: Package
+Title: Utilities for UseClinic-Generated Packages
+Version: 0.1.0
+Author: Carl A. B. Pearson <carl.ab.pearson@gmail.com>
+Maintainer: Carl A. B. Pearson <carl.ab.pearson@gmail.com>
+Description: This package seamlessly provides utility functions in useclinic-
+    generated packages.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.2
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

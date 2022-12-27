@@ -1,0 +1,161 @@
+---
+title: "Argument Checking for Pedagogy"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Argument Checking for Pedagogy}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(useclinicutils)
+```
+
+# Motivation
+
+Bottom-line: *Argument checks in code for learning IS ABSOLUTELY ESSENTIAL*.
+
+```{r motivation}
+helloworld <- function(name = "World") sprintf("Hello, %s!", name)
+helloworld()
+helloworld("Carl")
+helloworld(c("Alice", "Bob")) # hmm, maybe not what a student expects ...
+try(helloworld(Carl)) # Error in sprintf, not helloworld
+```
+
+The `helloworld` task is a ubiquitous starting point when developing
+understanding for most programming languages. Yet even in this most introductory
+example lurks a potentially inscrutable error for novices.
+
+# Your Package
+
+Many tasks and activities entail some amount of programming, without explicitly
+being about programming. That's the sort of area we imagine you're writing a
+package about to provide learning activities and/or support for such activities.
+
+Development of the ability to troubleshoot the explicitly programming-related
+problems of the kind in the motivating example might be one of your course's
+learning objectives. However, often that is *not* an objective, particularly in
+courses that are about a topic which _uses_ programming rather than is _about_
+programming.
+
+In that _use of_ context, error triage can be an undesirable time sink for
+instructors and students. Even for the _about_ context, when working with
+beginners or for particularly arcane errors, you might want to provide gentler
+alternatives.
+
+Put another way: the pedagogical context means working with novices (even if not
+_coding_ novices): helpful misuse checking / error messages is a *MUST-have*.
+
+The `useclinicutils` package provides a light-weight approach to checking
+function arguments, designed for use in learning packages generated with the
+`useclinic` approach.
+
+Your particular course might need more sophisticated error checking. Maybe even
+*less* sophisticated checking - that all depends on your learning objectives. If
+you think that's true (minding need to balance also not requiring novices to
+install a bunch of other packages), look into e.g.
+[this write up](https://blog.r-hub.io/2022/03/10/input-checking/) for
+alternatives. If using one of those options, you don't need `checker` and might
+not need `useclinicutils`.
+
+# A Light Weight Solution: `checker`s
+
+```{r motivation2}
+check_string <- checker(
+  is.character(x) && length(x) == 1,
+  "'%s' must a character vector of length == 1."
+)
+helloworld <- function(name = "World") sprintf(
+  "Hello, %s!", name |> check_string()
+)
+helloworld()
+helloworld("Carl")
+try(helloworld(Carl))
+```
+
+Using the `checker`-family of functions, you can quickly define constraint-
+checking functions and error messages in your package, then incorporate them in
+your exported (for student consumption) code. You can then encourage students to
+inspect the functions directly in addition to reading their documentation:
+
+```{r motivation3}
+helloworld
+```
+
+The constraint checks clarify and reinforce your documentation of the code,
+while also affording you the opportunity to write error messages tailored to
+your audience.
+
+To use checkers in your package, you still need to define them. We recommend a
+`R/checks.R` file, where you write definitions akin to:
+
+```{r examplecheck}
+
+```
+
+# More Pedagogical Motivation
+
+In `R`, defining functions does not generally entail specifying what "type" or
+"class" the inputs are, nor are coders required to formally specify the type of
+the value that is returned by the function. There are several downsides to this
+approach when it comes to learning on some particular code.
+
+In a typed language, the code itself must include the type information in a
+particular format, often with keywords, and the documentation and training
+materials for that syntax will be more generally available. Your package code
+can really only indicate type with variable names (which might detract from
+telegraphing other information about those variables) or documentation. But
+there aren't standards for documenting type, nor does the population tool
+`roxygen2` provide a standard way to capture then output type information.
+
+#' The `checks.R` script is intended to include `check_...` validators that are
+#' used within various topic functions. These functions are not intended to be
+#' exported (though can be viewed with `{{{pkgname}}}:::check_...`). They are meant
+#' to seen by students if they inspect exported functions (i.e. they should be
+#' named informatively to indicate what arguments are being checked how), but
+#' their guts ignored. More importantly, they should provide informative errors
+#' when the functions that *are* exported are misapplied.
+#'
+#' In general, `check_...`s are intended to:
+#'  - concern one feature (therefore, one logical test) at a time
+#'  - have a succinct, discernible response when that test is violated
+#'  - be applied via pipe in exported functions
+#'
+#' Note the [get_piped_call_var()] and [checker()] functions are not exported;
+#' as a user of this template, you shouldn't (1) touch them or (2) have to
+#' understand their internals. All you should need to do is define new checkers
+#' like `check_something <- checker(SOMELOGIC, "Some message about %s")`.
+#'
+#' Lastly: while [checker()] below provides a convenient way to check single
+#' arguments, your argument validations may need to pass more than one argument
+#' at a time. Several approaches are plausible: you could defined
+#' `check_something(x, y)` by hand, you could pass a list combining multiple
+#' values, etc: [checker()] is simply a convenience, not a requirement.
+#'
+#' Using the example `check_...`s at the bottom of this script, a
+#' `helloworld(...)` function might look like:
+#'
+#' @examples
+#' helloworld <- function(name) {
+#'   name |> check_character() |> check_scalar() |> check_nonemptychar()
+#'   sprintf("Hello, %s!", name)
+#' }
+#'
+#' helloworld
+#' helloworld("Carl") # works
+#' try(helloworld(1)) # nope
+#' a <- 1
+#' try(helloworld(a)) # nope
+#' a <- "Carl"
+#' helloworld(a) # works
+#' try(helloworld(c("Alice", "Bob"))) # nope
+#' try(helloworld("")) # nope
+
